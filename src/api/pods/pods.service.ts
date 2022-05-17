@@ -14,7 +14,7 @@ export class PodsService {
 
 
     async findAll(): Promise<PodsDto[]> {
-        throw new ForbiddenException('У вас нет прав для дальнейшего действия')
+        // throw new ForbiddenException('У вас нет прав для дальнейшего действия')
         return this.PodsRepository.find()
     }
 

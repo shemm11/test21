@@ -9,8 +9,7 @@ export class PodsController {
 
     @Post('/get')
     async findPods(): Promise<PodsDto[]> {
-      
-        
+        throw new ForbiddenException()
         return this.podsService.findAll()
     }
 

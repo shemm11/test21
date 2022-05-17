@@ -7,6 +7,8 @@ export class GetLogsDto {
     offset?: number = 0
 
     limit?: number = 25
+
+    uid?: string
    
     @ApiProperty()
     username?: string

@@ -36,7 +36,7 @@ export class LogsEntity {
 
 
     @ManyToOne(() => FuncHelperEntity, (func) => func.helper, {eager: true})
-    @JoinColumn({ name: 'usingFuncId', referencedColumnName: 'id'})
+    @JoinColumn({ name: 'usingFuncId', referencedColumnName: 'uid'})
     func: FuncHelperEntity
 
     @Column({length: 2000, nullable: true})

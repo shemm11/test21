@@ -2,6 +2,7 @@ import { ApiProperty } from "@nestjs/swagger";
 
 export class FuncHelperDto {
 
+    uid: string
     path: string
     desciption: string
     method: string
@@ -9,5 +10,8 @@ export class FuncHelperDto {
 }
 
 export class FuncHelperResponseDto extends FuncHelperDto {
-    id: string
+    uid: string
+    path: string
+    desciption: string
+    method: string
 }

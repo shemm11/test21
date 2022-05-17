@@ -4,7 +4,8 @@ import { LogsEntity } from './logs.entity';
 @Entity({ name: 'funcHelper' })
 export class FuncHelperEntity {
     @PrimaryGeneratedColumn()
-    id: number;
+    @Generated("uuid")
+    uid: string;
 
     @Column()
     desciption: string;

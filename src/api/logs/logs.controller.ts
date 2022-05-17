@@ -12,9 +12,20 @@ export class LogsController {
     constructor ( private readonly logsService: LogsService ) {}
 
     @Post()
-    async findAll(@Body() data: GetLogsDto): Promise<LogsEntity[]> {
+    async findAll(@Body() data: GetLogsDto): Promise<any> {
         return this.logsService.findAll(data)
     }
+
+    @Put('func')
+    async changeFunc(@Body() data : FuncHelperDto): Promise<any> {
+        return this.logsService.changeFunc(data)
+    }
+
+    @Put('log')
+    async changeLog(@Body() data : FuncHelperDto): Promise<any> {
+        return this.logsService.changeLog(data)
+    }
+    
 
     @Post('func')
     async postFuncHelper(@Body() data: FuncHelperDto): Promise<FuncHelperDto> {
