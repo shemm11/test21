@@ -1,14 +1,17 @@
 import { ApiProperty } from '@nestjs/swagger' 
 import { FuncHelperDto } from './getFuncHelperDto'
 import { Transform, Type } from 'class-transformer';
+import { IsNumber } from 'class-validator';
+
 
 export class GetLogsDto {
 
-    offset?: number = 0
-
-    limit?: number = 25
-
-    uid?: string
+    @ApiProperty()
+    @IsNumber()
+    readonly offset: number = 0
+    @ApiProperty()
+    @IsNumber()
+    readonly limit: number = 25
    
     @ApiProperty()
     username?: string

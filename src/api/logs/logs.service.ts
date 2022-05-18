@@ -3,12 +3,10 @@ import { LogsEntity } from './entities/logs.entity';
 import { FuncHelperDto } from './dto/getFuncHelperDto';
 import { LogsDto } from './dto/createLogsDto';
 import { FuncHelperEntity } from './entities/funcHelper.entity';
-import { Between, Equal, getSqljsManager, Like, Not, Repository } from 'typeorm';
+import { Between, Not, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { detect } from 'detect-browser';
 import { GetLogsDto } from './dto/getLogsDto';
-import { of } from 'rxjs';
-import e from 'express';
 
 @Injectable()
 export class LogsService { 
@@ -22,6 +20,8 @@ export class LogsService {
 
     async findAll(data: GetLogsDto): Promise<any> {
 
+        console.log(data)
+
         let { startDate, currentDate } = this.getDate()
 
         if (data.currentDate !== undefined) {
@@ -33,23 +33,20 @@ export class LogsService {
         }
         
         let searchOptions: any = {
-            uid : data.uid != null ? data.uid : Not(''),
             ip : data.ip != null ? data.ip : Not(''),
             is_successful : data.is_successful != null ? data.is_successful : Not(''),
             username : data.username != null ? data.username : Not(''),
-            date : data.date != null ? data.date : Not(Equal('')),
+            date : data.date != null ? data.date : Not(''),
             using_browser : data.using_browser != null ? data.using_browser : Not(''),
-            funcUid : null,
-            funcDesciption : null,
-            funcPath :  null,
-            funcMethod :  null,
+            funcUid : Not(''),
+            funcDesciption : Not(''),
+            funcPath :  Not(''),
+            funcMethod :  Not(''),
         }
 
         if(data.func){
             if(data.func.method){
                 searchOptions.funcMethod = data.func.method
-            } else {
-                // searchOptions.funcMethod = Not('')
             }
     
             if(data.func.path){
@@ -58,69 +55,39 @@ export class LogsService {
     
             if(data.func.uid){
                 searchOptions.funcUid = data.func.uid
-            }
+            } 
     
             if(data.func.desciption){
                 searchOptions.funcDesciption = data.func.desciption
-            }
+            } 
         }
-       
-        // console.log(searchOptions)
 
-
-
-        // const method = searchOptions.funcMethod
-
-        // console.log(method)
-
-        // const test = await this.logsRepository
+        //   const test = await this.logsRepository
         //     .createQueryBuilder("logs")
         //     .leftJoinAndSelect("logs.func", "func")
-        //     .where(`func.method ${method}`)
-        //     // .where("username")
+        //     .where(`date BETWEEN ${startDate} AND ${currentDate}`)
         //     .getSql()
         //     // .getMany()
 
         // return test
-
-        
-        return  await this.logsRepository.find({
+       
+        return  await this.logsRepository.findAndCount({
             relations: ['func'],
             where: { 
-                uid: searchOptions.uid,
                 ip: searchOptions.ip,
                 is_successful: searchOptions.is_successful,
                 username: searchOptions.username,
                 using_browser: searchOptions.using_browser,
-                // date: Between(startDate, currentDate),
+                date: Between(startDate, currentDate),
                 func: {
-                    // uid: searchOptions.funcUid == null? Not('') : searchOptions.funcUid,
-                    uid: Not(''),
-                    // desciption: searchOptions.funfuncDesciptioncUid == null? Not(''): searchOptions.funcDesciption,
-                    path: searchOptions.funcPath == null? Not(''): searchOptions.funcPath,
-                    // method: searchOptions.funcMethod == null? Not(''): searchOptions.funcMethod,
+                    desciption: searchOptions.funcDesciption,
+                    method: searchOptions.funcMethod,
+                    path: searchOptions.funcPath
                 }
             },
             skip: data.offset,
             take: data.limit,
         })
-        //.then(res => {
-        //     return res.filter(element =>{
-        //         if(searchOptions.funcMethod != null && element.func.method == data.func.method){
-        //             return element
-        //         } 
-        //         if(searchOptions.funcPath != null && element.func.path == data.func.path){
-        //             return element
-        //         } 
-        //         if(searchOptions.funcDesciption != null && element.func.desciption == data.func.desciption){
-        //             return element
-        //         } 
-        //         if(searchOptions.funcUid != null && element.func.uid == data.func.uid){
-        //             return element
-        //         } 
-        //     })
-        // })
-
     }
 
     async postDataFuncHelper(data: FuncHelperDto): Promise<FuncHelperEntity> {
@@ -145,12 +112,14 @@ export class LogsService {
         const body = request.body
         body.password != null ? body.password = '***' : ''
 
+
         const LogData = {
             req_data: request.body,
-            ip: request.ip,
+            // ip: request.ip,
+            ip: '111',
             // using_browser: detect(userAgent).name,
-            using_browser: 'chrome',
-            username: 'test',
+            using_browser: 'edge',
+            username: 'qwe',
             is_successful: statusReq,
             func: funcHelper,
             date: this.getTimeStamp()
@@ -188,14 +157,6 @@ export class LogsService {
         return  await this.funHelperRepository.save(data)
     }
 
-    detectStatusCode(statusCode: number): boolean {
-        if (statusCode > 400) {
-            return false
-        } else {
-            return true
-        }
-
-    }
 
     getTimeStamp(): string {
 
@@ -207,12 +168,11 @@ export class LogsService {
 
     getDate(): any {
 
-        const startDate = new Date()
+        let startDate = new Date()
         startDate.setUTCHours(0, 0, 0, 0)
-        startDate.toISOString()
-
+       
         return {
-            startDate: startDate,
+            startDate: startDate.toISOString(),
             currentDate: this.getTimeStamp()
         }
 
@@ -269,12 +229,7 @@ export class LogsService {
                 uid: data.uid
             }
         })
-
-        // console.log(logs.username)
-        // console.log(data)
-
-        // Object.assign(logs, data)
-
+        
         logs.username = 'test'
 
         return await this.funHelperRepository.update(logs.uid, logs)

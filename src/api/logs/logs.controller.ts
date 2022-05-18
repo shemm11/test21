@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, UsePipes, ValidationPipe } from '@nestjs/common';
 import { LogsEntity } from './entities/logs.entity';
 import { FuncHelperDto } from './dto/getFuncHelperDto';
 import { LogsService } from './logs.service';
@@ -7,6 +7,7 @@ import { FuncHelperEntity } from './entities/funcHelper.entity';
 import { GetLogsDto } from './dto/getLogsDto';
 
 @Controller('logs')
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class LogsController { 
 
     constructor ( private readonly logsService: LogsService ) {}
