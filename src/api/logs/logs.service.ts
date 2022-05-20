@@ -182,15 +182,12 @@ export class LogsService {
     }
 
     getDate(): any {
-
         let startDate = new Date()
         startDate.setUTCHours(0, 0, 0, 0)
-       
         return {
             startDate: startDate.toISOString(),
             currentDate: this.getTimeStamp()
         }
-
     }
 
 
@@ -203,15 +200,14 @@ export class LogsService {
             || handler.includes('getManyBase'))) {
             return 'SELECT'
         }
+
         switch (method) {
             case 'POST':
                     return 'INSERT'
                 break;
-        
             case 'GET': 
                 return 'SELECT'
                 break
-            
             case 'PUT': 
                 return 'UPDATE'
                 break
