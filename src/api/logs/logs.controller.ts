@@ -1,24 +1,51 @@
-import { Controller, Get, Post, Put, Delete, Body, UsePipes, ValidationPipe } from '@nestjs/common';
 import { LogsEntity } from './entities/logs.entity';
-import { FuncHelperDto } from './dto/getFuncHelperDto';
+import { Controller, Post, Put, Body, UsePipes, ValidationPipe, Header, Res } from '@nestjs/common';
+import { FuncHelperDto } from './dto/funcHelperDto';
 import { LogsService } from './logs.service';
-import { LogsDto } from './dto/createLogsDto';
-import { FuncHelperEntity } from './entities/funcHelper.entity';
-import { GetLogsDto } from './dto/getLogsDto';
+import { LogsDto } from './dto/logsDto';
+import { Response } from 'express'
+import { ApiResponse } from '@nestjs/swagger';
+import * as Excel from 'exceljs'
 
 @Controller('logs')
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 export class LogsController { 
 
-    constructor ( private readonly logsService: LogsService ) {}
+    constructor ( 
+        private readonly logsService: LogsService 
+
+        ) {}
 
     @Post()
-    async findAll(@Body() data: GetLogsDto): Promise<any> {
+    async findAll(@Body() data: LogsDto): Promise<[LogsEntity[], number]> {
         return this.logsService.findAll(data)
     }
 
+    @Post('excel')
+    @Header(
+        'Content-Type',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    @Header('Content-Disposition', 'attachment; filename=auditLogs.xlsx')
+    @ApiResponse({
+        status: 200,
+        description: 'The record has been successfully created.',
+    })
+    @ApiResponse({ status: 403, description: 'Forbidden.' })
+    @ApiResponse({ status: 400, description: 'Bad Request.' })
+    async excel(@Body() data: LogsDto, @Res() res: Response): Promise<void> {
+        const workbook = await this.logsService.createExcel(data)
+
+        
+        return workbook.xlsx.write(res).then(() => {
+            res.status(200).end()
+        })
+
+    }
+
+
     @Put('func')
-    async changeFunc(@Body() data : FuncHelperDto): Promise<any> {
+    async changeFuncHelper(@Body() data : FuncHelperDto): Promise<FuncHelperDto> {
         return this.logsService.changeFunc(data)
     }
 
@@ -38,8 +65,4 @@ export class LogsController {
         return await this.logsService.postDataLogs(data)
     }
 
-    @Post('test')
-    async test(): Promise<any> {
-        return 'dsad'
-    }
 }

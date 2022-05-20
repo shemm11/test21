@@ -3,7 +3,7 @@ import { ProviderModule } from './api/provider/provider.module';
 import { TemplatesModule } from './api/templates/templates.module';
 import { PodsModule } from './api/pods/pods.module';
 import { LogsModule } from './api/logs/logs.module';
-import { MiddlewareConsumer, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { RegexModule } from './regex/regex.module';
@@ -17,7 +17,6 @@ import { PodsEntity } from './api/pods/entities/pods.entity';
 import { TemplatesEntity } from './api/templates/entities/templates.entity';
 import { ProviderEntity } from './api/provider/entities/provider.entity';
 import { RouteEntity } from './api/route/entities/route.entity';
-import { AppLoggerMiddleware } from './api/logs/logs.middleware';
 
 
 @Module({
@@ -60,8 +59,4 @@ import { AppLoggerMiddleware } from './api/logs/logs.middleware';
     { provide: APP_INTERCEPTOR, useClass: LogsInterceptor }
   ],
 })
-export class AppModule { 
-  configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(AppLoggerMiddleware).forRoutes('*');
-  }
-}
+export class AppModule { }

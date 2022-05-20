@@ -15,12 +15,6 @@ export class LogsInterceptor implements NestInterceptor {
       this.logService.constructorData(context)
     })
 
-    // console.log(response)
-    // console.log(response.statusCode)
-
-
-
-
     return next.handle()
   }
 }

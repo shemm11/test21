@@ -1,12 +1,12 @@
-import { ExecutionContext, HttpCode, Injectable, Body } from '@nestjs/common';
+import { ExecutionContext, Injectable } from '@nestjs/common';
 import { LogsEntity } from './entities/logs.entity';
-import { FuncHelperDto } from './dto/getFuncHelperDto';
-import { LogsDto } from './dto/createLogsDto';
+import { LogsDto } from './dto/logsDto';
 import { FuncHelperEntity } from './entities/funcHelper.entity';
-import { Between, Not, Repository } from 'typeorm';
+import { FuncHelperDto } from './dto/funcHelperDto';
+import { Between, Not, Repository, Like } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { detect } from 'detect-browser';
-import { GetLogsDto } from './dto/getLogsDto';
+import * as Excel from 'exceljs'
 
 @Injectable()
 export class LogsService { 
@@ -18,30 +18,27 @@ export class LogsService {
     ) {}
 
 
-    async findAll(data: GetLogsDto): Promise<any> {
-
-        console.log(data)
+    async findAll(data: LogsDto): Promise<[LogsEntity[], number]> {
 
         let { startDate, currentDate } = this.getDate()
-
         if (data.currentDate !== undefined) {
             currentDate = data.currentDate
         }
-
         if (data.startDate  !== undefined) {
             startDate = data.startDate
         }
-        
+
         let searchOptions: any = {
             ip : data.ip != null ? data.ip : Not(''),
             is_successful : data.is_successful != null ? data.is_successful : Not(''),
-            username : data.username != null ? data.username : Not(''),
-            date : data.date != null ? data.date : Not(''),
+            username : data.username != null ? Like(data.username) : Not(''),
             using_browser : data.using_browser != null ? data.using_browser : Not(''),
-            funcUid : Not(''),
-            funcDesciption : Not(''),
-            funcPath :  Not(''),
-            funcMethod :  Not(''),
+            funcDesciption: Not(''),
+            funcPath: Not(''),
+            funcMethod: Not('')
+            // funcDesciption : data.func.desciption == undefined || data.func.desciption == null ? Not(''): data.func.desciption,
+            // funcPath :  data.func.path === undefined || data.func.path === null ? Not('') : data.func.path,
+            // funcMethod : data.func.method === undefined || data.func.method === null ? Not('') : data.func.method
         }
 
         if(data.func){
@@ -53,23 +50,10 @@ export class LogsService {
                 searchOptions.funcPath = data.func.path
             }
     
-            if(data.func.uid){
-                searchOptions.funcUid = data.func.uid
-            } 
-    
             if(data.func.desciption){
                 searchOptions.funcDesciption = data.func.desciption
             } 
         }
-
-        //   const test = await this.logsRepository
-        //     .createQueryBuilder("logs")
-        //     .leftJoinAndSelect("logs.func", "func")
-        //     .where(`date BETWEEN ${startDate} AND ${currentDate}`)
-        //     .getSql()
-        //     // .getMany()
-
-        // return test
        
         return  await this.logsRepository.findAndCount({
             relations: ['func'],
@@ -85,12 +69,49 @@ export class LogsService {
                     path: searchOptions.funcPath
                 }
             },
+            order: {
+                date: 'DESC'
+            } ,
             skip: data.offset,
             take: data.limit,
         })
     }
 
-    async postDataFuncHelper(data: FuncHelperDto): Promise<FuncHelperEntity> {
+    async createExcel(data: LogsDto): Promise<any> {
+        const workBook = new Excel.Workbook()
+        const workSheet = workBook.addWorksheet('Audit Logs')
+
+        workSheet.columns = [
+            { header: 'Имя пользователя', key: 'username', width: 25 },
+            { header: 'IP', key: 'ip', width: 15 },
+            { header: 'Тип операции', key: 'method', width: 20 },
+            { header: 'Действие', key: 'description', width: 40  },
+            { header: 'Дата', key: 'date', width: 15},
+            { header: 'Браузер', key: 'browser', width: 15 },
+            { header: 'Результат', key: 'isSuccessful', width: 10 },
+            { header: 'Тело запроса', key: 'reqData', width: 50,  }
+        ]
+       
+        const find = await this.findAll(data)
+
+        find[0].map(res =>{
+            workSheet.addRow({
+                username: res.username,
+                ip: res.ip,
+                method: res.func.method,
+                description: res.func.desciption,
+                data: res.date,
+                browser: res.using_browser,
+                isSuccessful: res.is_successful,
+                reqData: res.req_body 
+            })
+        })
+
+        return workBook
+
+    }
+
+    async postDataFuncHelper(data: FuncHelperDto): Promise<FuncHelperDto> {
         return await this.funHelperRepository.save(data)
     }
 
@@ -100,7 +121,6 @@ export class LogsService {
 
 
     async constructorData(context: ExecutionContext): Promise<void> {
-        
         const request = context.getArgByIndex(0);
         const userAgent = request.headers["user-agent"]
         const statusReq = context.getArgByIndex(1).statusCode >= 400 ? false : true
@@ -112,9 +132,8 @@ export class LogsService {
         const body = request.body
         body.password != null ? body.password = '***' : ''
 
-
-        const LogData = {
-            req_data: request.body,
+        const logData = {
+            req_body: JSON.stringify(request.body),
             // ip: request.ip,
             ip: '111',
             // using_browser: detect(userAgent).name,
@@ -125,17 +144,15 @@ export class LogsService {
             date: this.getTimeStamp()
         }
    
-        this.saveData(LogData)
-
+        await this.logsRepository.save(logData)
     }
 
-    async saveData(data: object): Promise<void> {
-        const test = await this.logsRepository.save(data)
+    inputDataFromGuard(context: ExecutionContext): void{
+        context.getArgByIndex(1).statusCode = 403
+        this.constructorData(context)
     }
-
 
     async findFuncHelper(path: string, name: string, method: string): Promise<FuncHelperEntity> {
-
         const funcHelper = await this.funHelperRepository.find({
             where: {
                 path: path,
@@ -159,11 +176,9 @@ export class LogsService {
 
 
     getTimeStamp(): string {
-
         const date = new Date()
         date.setTime(date.getTime() + 60 * 1000 * 360)
         return date.toISOString()
-
     }
 
     getDate(): any {
@@ -180,10 +195,14 @@ export class LogsService {
 
 
     constructorMethod(method: string, handler: string): string {
-        if(method === 'POST' && handler.includes('find')) {
+        if(
+            (method === 'POST') 
+            && (handler.includes('find') 
+            || handler.includes('getAlls') 
+            || handler.includes('getRights') 
+            || handler.includes('getManyBase'))) {
             return 'SELECT'
         }
-
         switch (method) {
             case 'POST':
                     return 'INSERT'
@@ -206,7 +225,6 @@ export class LogsService {
                 return method
                 break;
         }
-
     }
 
 
@@ -216,9 +234,7 @@ export class LogsService {
                 id: data.uid
             }
         })
-
         Object.assign(funcHelper, data)
-
         return await this.funHelperRepository.update(funcHelper.uid, funcHelper)
 
     }
@@ -229,9 +245,7 @@ export class LogsService {
                 uid: data.uid
             }
         })
-        
         logs.username = 'test'
-
         return await this.funHelperRepository.update(logs.uid, logs)
 
     }
