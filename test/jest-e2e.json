@@ -7,3 +7,30 @@
     "^.+\\.(t|j)s$": "ts-jest"
   }
 }
+
+
+const { offset, limit, ...data } = data;
+
+  function removeNullKey(object) {
+      const res = {};
+      Object.keys(object).forEach((key) => {
+          if(object[key]) {
+              res[key] = object[key];
+          }
+      });
+      return res;
+  }
+
+  const filterData = removeNullKey(data);
+
+  return  await this.logsRepository.findAndCount({
+      where: { 
+          ...filterData,
+          logDate: Between(startDate, currentDate),
+      },
+      order: {
+          logDate: 'DESC'
+      } ,
+      skip: offset,
+      take: limit,
+  })
